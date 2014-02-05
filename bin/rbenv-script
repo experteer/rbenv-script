@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#
+# Usage: rbenv script
+#
+
+
+set -e
+[ -n "$RBENV_DEBUG" ] && set -x
+
+if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
+  echo "rbenv-script 0.0.1"
+  exit
+fi
+
+traverse-rbenv-script-files() {
+  local root="$1"
+  local results=""
+
+  while [ -n "$root" ]; do
+    if [ -e "${root}/.rbenv-script.local" ]; then
+      results="${root}/.rbenv-script.local"$'\n'"$results"
+    fi
+    if [ -e "${root}/.rbenv-script" ]; then
+      results="${root}/.rbenv-script"$'\n'"$results"
+    fi
+    root="${root%/*}"
+  done
+
+  if [ -n "$results" ]; then
+    echo -n "$results"
+  else
+    return 1
+  fi
+}
+
+find-rbenv-script-files() {
+  if [ -e "${RBENV_ROOT}/script" ]; then
+    echo "${RBENV_ROOT}/script"
+  fi
+
+  traverse-rbenv-script-files "$RBENV_DIR" ||
+  [ "$RBENV_DIR" = "$PWD" ] || traverse-rbenv-script-files "$PWD"
+}
+
+
+while read file; do
+  echo "# $file"
+  cat "$file"; echo; 
+  echo
+done < <( find-rbenv-script-files )
